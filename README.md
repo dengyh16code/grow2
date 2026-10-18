@@ -53,9 +53,6 @@ FoundationPose is optional. With `registration_way: icp`, pose registration runs
 locally, so you can skip installing and starting FoundationPose. Set
 `registration_way: foundation_pose` to use its remote service instead.
 
-Grasp generation uses Contact-GraspNet, with a local top-down fallback when
-fewer than 10 candidates pass the downward-orientation filter.
-
 ### API keys
 
 Export the credentials for your selected models:
