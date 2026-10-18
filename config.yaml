@@ -1,0 +1,82 @@
+# Runtime configuration. This file lives outside the package: main.py loads it
+# (--config, defaulting to this one) and improvised_tooluse/config.py hands the
+# entries to whoever needs them. Every entry is only a default -- a call that
+# passes the matching argument explicitly still wins.
+
+experiment_setting: simu  # simu or real
+
+# Vision-foundation-model servers -- host/port defaults of the vfm_client requests
+servers:
+  # SAM3 -- /sam3_query and /sam3_query_prompt
+  sam3:
+    host: crane5.ddns.comp.nus.edu.sg
+    port: 4054
+
+  # SAM3D -- /sam3d_query
+  sam3d:
+    host: crane7.ddns.comp.nus.edu.sg
+    port: 4056
+
+  # FoundationPose -- /fp_registration_query and /fp_tracking_query
+  foundationpose:
+    host: crane1.ddns.comp.nus.edu.sg
+    port: 4052
+
+  # Contact-GraspNet from an RGB-D frame -- /sample_grasp
+  grasp:
+    host: crane5.ddns.comp.nus.edu.sg
+    port: 4058
+
+# VLMs -- must be keys of `model_dict` in vlm_client.py, which holds the
+# api_key / base_url / model_name of each one.
+models:
+  # Object parsing, part parsing and tool selection: query_model.
+  vlm: gpt-5.5
+  # 2D grounding: the default of query_bounding_box.
+  bounding_box: qwen3.7-plus
+
+# Pose registration mode.
+# Allowed registration_way values: foundation_pose, icp.
+registration_way: icp
+
+# Multi-view rendering -- how many views are rendered around an object before
+# affordance detection (the default of Perception_module.multi_view_rendering).
+rendering:
+  view_num: 8
+  # How the cameras are laid out around the object: sphere or random.
+  camera_distribution: sphere
+  # Elevation of the two camera rings of the sphere distribution, in degrees:
+  # the top ring sits at +sphere_angle, the bottom one at -sphere_angle.
+  sphere_angle: 25
+
+# Multi-view affordance masks are fused and postprocessed at one shared metric
+# resolution. Votes count distinct camera views, not the number of image pixels.
+affordance_fusion:
+  voxel_size: 0.003             # metres (3 mm)
+  strong_min_positive_views: 3
+  strong_min_positive_ratio: 0.6
+  weak_min_positive_views: 2
+  weak_min_positive_ratio: 0.5
+  weak_neighbor_voxels: 1       # one-hop 26-connected support from a strong voxel
+  mask_erosion_pixels: 1
+  max_erosion_loss_ratio: 0.2   # keep the original if erosion removes >20%
+  dbscan_eps_multiplier: 2.0    # 6 mm with the configured voxel size
+  dbscan_min_points: 3
+  min_cluster_ratio: 0.02       # retain clusters at least 2% of the largest
+
+paths:
+  # Meshes, robot URDFs and info.json, read by simu_env.py.
+  asset_dir: /home/yuhong/grow2/asset
+
+  # The case_<id>.json scenes --case_id picks from, read by main.py.
+  test_case_dir: /home/yuhong/grow2/test_case
+
+# Simulation-only drive gains and grasp-constraint accuracy at a 0.01 s timestep.
+# Higher solver iteration counts apply to the robot and its attached tool.
+simulation:
+  arm_stiffness: 10000.0
+  arm_damping: 300.0
+  arm_force_limit: 100.0
+  solver_position_iterations: 32
+  solver_velocity_iterations: 2
+  attachment_angular_damping: 10000.0

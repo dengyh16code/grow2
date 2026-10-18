@@ -1,0 +1,89 @@
+# Python dependencies for environment.yml (CPython 3.11, Linux x86_64).
+# Existing package versions are preserved; no dependency upgrades in this migration.
+# Keep direct and transitive pins consistent when changing dependencies.
+
+# Direct dependencies
+# mplib is the custom nature21/MPlib fork; do not replace it with PyPI mplib.
+# numpy stays below 2 for SAPIEN / mplib compatibility.
+# setuptools 81 provides pkg_resources, which SAPIEN imports at runtime.
+matplotlib==3.11.1
+mplib @ https://github.com/nature21/MPlib/releases/download/publish/mplib-0.2.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+numpy==1.26.4
+open3d==0.19.0
+openai==2.53.0
+opencv-python==4.11.0.86
+pillow==12.3.0
+pyyaml==6.0.3
+pyzmq==27.1.0
+requests==2.34.2
+sapien==3.0.0
+scipy==1.17.1
+setuptools==81.0.0
+transforms3d==0.4.2
+trimesh==3.23.5
+
+# Transitive dependencies (pinned to preserve the existing resolution)
+addict==2.4.0
+annotated-types==0.8.0
+anyio==4.14.2
+attrs==26.1.0
+blinker==1.9.0
+certifi==2026.7.22
+cffi==2.1.1 ; implementation_name == 'pypy'
+charset-normalizer==3.4.9
+click==8.4.2
+comm==0.2.3
+configargparse==1.7.5
+contourpy==1.3.3
+cycler==0.12.1
+dash==4.4.1
+distro==1.9.0
+fastjsonschema==2.22.1
+flask==3.1.3
+fonttools==4.63.0
+h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
+idna==3.18
+importlib-metadata==9.0.0
+itsdangerous==2.2.0
+janus==2.0.0
+jinja2==3.1.6
+jiter==0.16.0
+joblib==1.5.3
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+jupyter-core==5.9.1
+kiwisolver==1.5.0
+lxml==6.1.1
+markupsafe==3.0.3
+narwhals==2.24.0
+nbformat==5.11.0
+nest-asyncio==1.6.0
+networkx==3.6.1
+packaging==26.3
+pandas==3.0.5
+platformdirs==4.11.1
+plotly==6.9.0
+pycparser==3.0 ; implementation_name == 'pypy'
+pydantic==2.13.4
+pydantic-core==2.46.4
+pyparsing==3.3.2
+pyperclip==1.11.0
+pyquaternion==0.9.9
+python-dateutil==2.9.0.post0
+referencing==0.37.0
+retrying==1.4.2
+rpds-py==2026.6.3
+scikit-learn==1.9.0
+six==1.17.0
+sniffio==1.3.1
+threadpoolctl==3.6.0
+toppra==0.6.9
+tqdm==4.70.0
+traitlets==5.16.1
+typing-extensions==4.16.0
+typing-inspection==0.4.2
+urllib3==2.7.0
+werkzeug==3.1.8
+zipp==4.1.0

@@ -1,0 +1,162 @@
+from typing import Union
+
+## TODO clean up the code here, too many functions that are plurals of one or the other and confusing naming
+import numpy as np
+import sapien
+import sapien.physx as physx
+import sapien.render
+import trimesh
+import trimesh.creation
+import open3d as o3d
+from improvised_tooluse.geom_utils import trimesh_to_open3d_mesh, merge_meshes
+
+def get_component_meshes(component: physx.PhysxRigidBaseComponent):
+    """Get component (collision) meshes in the component's frame."""
+    meshes = []
+    for geom in component.get_collision_shapes():
+        if isinstance(geom, physx.PhysxCollisionShapeBox):
+            mesh = trimesh.creation.box(extents=2 * geom.half_size)
+        elif isinstance(geom, physx.PhysxCollisionShapeCapsule):
+            mesh = trimesh.creation.capsule(
+                height=2 * geom.half_length, radius=geom.radius
+            )
+        elif isinstance(geom, physx.PhysxCollisionShapeCylinder):
+            mesh = trimesh.creation.cylinder(
+                radius=geom.radius, height=2 * geom.half_length,
+                transform=trimesh.transformations.rotation_matrix(np.pi/2, [0, 1, 0])
+            )
+        elif isinstance(geom, physx.PhysxCollisionShapeSphere):
+            mesh = trimesh.creation.icosphere(radius=geom.radius)
+        elif isinstance(geom, physx.PhysxCollisionShapePlane):
+            continue
+        elif isinstance(geom, (physx.PhysxCollisionShapeConvexMesh)):
+            vertices = geom.vertices  # [n, 3]
+            faces = geom.get_triangles()
+            vertices = vertices * geom.scale
+            mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+        elif isinstance(geom, physx.PhysxCollisionShapeTriangleMesh):
+            vertices = geom.vertices
+            faces = geom.get_triangles()
+            vertices = vertices * geom.scale
+            mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+        else:
+            raise TypeError(type(geom))
+        mesh.apply_transform(geom.get_local_pose().to_transformation_matrix())
+        meshes.append(mesh)
+    return meshes
+
+def get_render_body_meshes(visual_body: sapien.render.RenderBodyComponent):
+    meshes = []
+    for render_shape in visual_body.render_shapes:
+        meshes += get_render_shape_meshes(render_shape)
+    return meshes
+
+
+def get_render_shape_meshes(render_shape: sapien.render.RenderShape):
+    meshes = []
+    if type(render_shape) == sapien.render.RenderShapeTriangleMesh:
+        for part in render_shape.parts:
+            vertices = part.vertices * render_shape.scale  # [n, 3]
+            faces = part.triangles
+            # faces = render_shape.mesh.indices.reshape(-1, 3)  # [m * 3]
+            mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+            mesh.apply_transform(render_shape.local_pose.to_transformation_matrix())
+            meshes.append(mesh)
+    return meshes
+
+
+def get_actor_visual_meshes(actor: sapien.Entity):
+    """Get actor (visual) meshes in the actor frame."""
+    meshes = []
+    comp = actor.find_component_by_type(sapien.render.RenderBodyComponent)
+    if comp is not None:
+        meshes.extend(get_render_body_meshes(comp))
+    return meshes
+
+
+def get_actor_meshes(actor: sapien.Entity):
+    """Get actor (collision) meshes in the world frame."""
+    meshes = []
+    comp = actor.find_component_by_type(physx.PhysxRigidBaseComponent)
+    if comp is not None:
+        meshes.extend(get_component_meshes(comp))
+    return meshes
+
+
+
+def get_component_mesh(component: physx.PhysxRigidBaseComponent, to_world_frame=True):
+    mesh = merge_meshes(get_component_meshes(component))
+    if mesh is None:
+        return None
+    if to_world_frame:
+        T = component.pose.to_transformation_matrix()
+        mesh.apply_transform(T)
+    return mesh
+
+
+def get_actor_visual_mesh(actor: sapien.Entity, to_world_frame=True) -> trimesh.Trimesh:
+    mesh = merge_meshes(get_actor_visual_meshes(actor))
+    if mesh is None:
+        return None
+    if to_world_frame:
+        T = actor.get_pose().to_transformation_matrix()
+        mesh.apply_transform(T)
+    return mesh
+
+
+def get_actor_mesh(actor: sapien.Entity, to_world_frame=True, visual=False) -> trimesh.Trimesh:
+    if visual:
+        mesh = merge_meshes(get_actor_visual_meshes(actor))
+    else:
+        mesh = merge_meshes(get_actor_meshes(actor))
+    if to_world_frame:
+        T = actor.get_pose().to_transformation_matrix()
+        mesh.apply_transform(T)
+    return mesh
+
+
+def get_actor_pcd(actor: sapien.Entity, to_world_frame=True, visual=False, num_points=int(1e4), return_o3d: bool = True) -> Union[np.ndarray, o3d.geometry.PointCloud]:
+    mesh = get_actor_mesh(actor, to_world_frame, visual)
+    if mesh is None:
+        return None
+    mesh_o3d = trimesh_to_open3d_mesh(mesh)
+    o3d_pcd = mesh_o3d.sample_points_uniformly(num_points, use_triangle_normal=True)
+    if return_o3d:
+        return o3d_pcd
+    else:
+        return np.asarray(o3d_pcd.points)
+
+
+def get_articulation_meshes(
+    articulation: physx.PhysxArticulation, exclude_link_names=()
+):
+    """Get link meshes in the world frame."""
+    meshes = []
+    for link in articulation.get_links():
+        if link.name in exclude_link_names:
+            continue
+        mesh = get_component_mesh(link, True)
+        if mesh is None:
+            continue
+        meshes.append(mesh)
+    return meshes
+
+def rect_intersect(r1, r2):
+    return not (
+        r1[1] < r2[0] or  # max_x1 < min_x2
+        r1[0] > r2[1] or  # min_x1 > max_x2
+        r1[3] < r2[2] or  # max_y1 < min_y2
+        r1[2] > r2[3]     # min_y1 > max_y2
+    )
+
+def compute_xy_rect(collision_model_path, scale, pos, quat):
+    mesh = trimesh.load_mesh(collision_model_path, process=False)
+    mesh.apply_scale(scale) 
+    T = sapien.Pose(p=pos, q=quat).to_transformation_matrix()
+    mesh.apply_transform(T)
+
+    lower, upper = mesh.bounds
+    xmin, ymin = lower[0], lower[1]
+    xmax, ymax = upper[0], upper[1]
+
+    return (xmin, xmax, ymin, ymax)

@@ -1,0 +1,17 @@
+Identify every visible object in the real-world tabletop workspace and return its normalized category directly. You may receive a full image and overlapping crops of the same scene.
+
+No object list or fixed category vocabulary is provided. Recognize objects from visible evidence and use concise, common, lowercase category names suitable for subsequent object detection and segmentation. Use the most specific category supported by the image; when the exact identity is uncertain, use a broader recognizable category instead of guessing. Keep names consistent across views and use the same name for objects of the same category. Return each category once, even if it occurs in multiple crops or multiple instances.
+
+Inspect each region systematically, including thin, small, low-contrast and partially occluded objects. Include objects ON, INSIDE, LEANING AGAINST, UNDER, or THROUGH another object or support, not only objects directly touching the tabletop. Look carefully around frames, racks, boxes and holders: a tool resting on a support is a separate object. Follow visible handles, shafts, blades and tips across occlusions; do not split a single tool into its parts or merge it into its support.
+
+Use visible support relationships and orientation as recognition context. Check whether an object rests on the table, hangs from a hook or rack, or is held upright by a post or stand. Examine the contact or attachment region and the object's complete shape together. Supports can help identify an object even though the supports themselves must be excluded from the output. Do not infer a support or attachment that is not visible.
+
+Before naming an object, check its defining geometry across the full image and crops. Distinguish objects using their complete shape, functional parts and visible context. Do not rely on material, color, a single small detail or an expected task to determine identity. Treat attached handles, blades, bristles, lids and surface decorations as parts of the whole object unless clearly separate.
+
+Exclude scene fixtures such as the robot, table, floor, walls, support frames, racks and fixed holders. Include movable containers and other standalone objects when their identity is visually supported. Keep an object's identity separate from its material and location: a wooden-handled tool or a tool on a holder must not be discarded because it is wooden or supported. Do not discard an identifiable object just because it is small or partly occluded. Do not invent fully hidden objects or infer objects from an expected task.
+
+Before answering, review each region once more for missed objects and mistaken identities. Combine evidence across all images; the crops repeat objects in the full image. Return only the final normalized category names, without descriptions, fixtures, object parts, explanations or markdown.
+
+Return valid JSON in this exact format:
+{"objects": ["category name", "..."]}
+If no supported objects are visible, return {"objects": []}.

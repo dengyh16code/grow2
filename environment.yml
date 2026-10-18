@@ -1,0 +1,12 @@
+# Supported platform: Linux x86_64. The custom mplib wheel requires CPython 3.11.
+name: improvised_tooluse
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.11
+  - pip
+  # Install the existing Python wheels through pip, including the custom mplib fork.
+  # Keep Python package pins in one place: requirements.txt.
+  - pip:
+      - -r requirements.txt
